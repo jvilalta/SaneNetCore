@@ -1,0 +1,147 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1>Scanner</h1>
+    <div class="row">
+        <div class="col">
+            <button class="btn" data-bind="click:scanImage,class:status,attr:{'disabled':scanning}">SCAN</button>
+            <br />
+            <div class="row">
+                <div class="col">
+                    <label class="form-check-label" for="enableMerge">Merge into PDF</label>
+                    <input type="checkbox" id="enableMerge" data-bind="checked:merge" />
+                </div>
+                <div class="col">
+                    <label class="form-check-label" for="duplex">Scan both sides</label>
+                    <input type="checkbox" id="duplex" data-bind="checked:duplex" />
+                </div>
+                <div class="col">
+                    <form style="text-align:left">
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="scannerMode" id="lineartRadio" value="Lineart" data-bind="checked:scannerMode">
+                                <label class="form-check-label" for="lineartRadio">
+                                    Lineart
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="scannerMode" id="halftoneRadio" value="Halftone" data-bind="checked:scannerMode">
+                                <label class="form-check-label" for="halftoneRadio">
+                                    Halftone
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="scannerMode" id="grayRadio" value="Gray" data-bind="checked:scannerMode">
+                                <label class="form-check-label" for="grayRadio">
+                                    Gray
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="scannerMode" id="colorRadio" value="Color" data-bind="checked:scannerMode">
+                                <label class="form-check-label" for="colorRadio">
+                                    Color
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-text" data-bind="foreach:{data:messages, as:'message'}">
+                        <br />
+                        <span data-bind="text:message">
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <h2>Files</h2>
+            <div id="accordion" data-bind="foreach:{data:dirs, as:'dir'}">
+                <div class="card">
+                    <div class="card-header" data-bind="attr:{id:'heading'+$index()}">
+                        <h5 class="mb-0" data-bind="text:$data.text">
+                        </h5>
+                    </div>
+
+                    <div id="collapseOne" class="collapse show" data-bind="attr:{'id':'collapse'+$index(),'aria-labelledby':'heading'+$index()}" data-parent="#accordion">
+                        <div class="card-body" data-bind="foreach:{data:dir.files,as:'file'}">
+                            <p>
+                                <a data-bind="text:file,attr:{href:'/download?folder='+dir.id+'&file='+file}"></a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @section Scripts{
+        <script type="text/javascript">
+            function viewModel() {
+                self = this;
+                self.dirs = ko.observableArray();
+                self.duplex = ko.observable(false);
+                self.merge = ko.observable(false);
+                self.messages = ko.observableArray(["Ready. Press SCAN button to start."]);
+                self.scanning = ko.observable(false);
+                self.status = ko.computed(function () {
+                    console.log('status ');
+                    return self.scanning() ? 'btn-secondary' : 'btn-primary';
+                });
+                self.statusMessages = ko.observableArray();
+                self.scanImage = function () {
+                    self.messages(["Requesting scan"]);
+                    connection.invoke("Scan", self.duplex(), self.merge(), self.scannerMode());
+                };
+                self.scannerMode = ko.observable("Lineart");
+            };
+            function updateFiles(dirs) {
+                console.log(dirs);
+                vm.dirs(dirs);
+            }
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/scannerhub")
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            async function start() {
+                try {
+                    await connection.start().then(() => {
+                        connection.invoke("GetDirectories");
+                    });
+                    console.log("connected");
+                } catch (err) {
+                    console.log(err);
+                    setTimeout(() => start(), 5000);
+                }
+            };
+
+            connection.on("Scanning", (status) => {
+                vm.scanning(status);
+            });
+            connection.on("UpdateDirectories", (dirs) => {
+                updateFiles(dirs);
+            });
+            connection.on("Error", (message) => {
+                console.log("Error " + message);
+                vm.messages.push(message);
+            });
+            connection.on("Progress", (message) => {
+                console.log("Progress  " + message);
+                vm.messages.push(message);
+            });
+            connection.onclose(async () => {
+                await start();
+            });
+            start();
+            vm = new viewModel();
+            ko.applyBindings(vm);
+            setInterval(() => {
+                console.log("Getting files");
+                connection.invoke("GetDirectories");
+            }, 1000);
+        </script>
+    }

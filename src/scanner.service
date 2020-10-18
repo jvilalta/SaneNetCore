@@ -1,0 +1,19 @@
+[Unit]
+Description=Scanner Web App
+
+[Service]
+# systemd will run this executable to start the service
+ExecStart=/home/pi/dotnet/dotnet home/pi/scanner/scanner.dll --urls http://0.0.0.0:5000
+# to query logs using journalctl, set a logical name here
+SyslogIdentifier=ScannerWebApp
+
+
+User=pi
+
+# This environment variable is necessary when dotnet isn't loaded for the specified user.
+# To figure out this value, run 'env | grep DOTNET_ROOT' when dotnet has been loaded into your shell.
+Environment=DOTNET_ROOT=/home/pi/dotnet
+Environment=ASPNETCORE_CONTENTROOT=/home/pi/scanner
+
+[Install]
+WantedBy=multi-user.target
