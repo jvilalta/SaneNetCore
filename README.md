@@ -3,7 +3,7 @@ A .Net Core scanner web app that interfaces with the SANE CLI
 
 This is a COVID inspired project. With family members now working and learning from home I've converted my old ScanSnap scanner to be a web enabled scanner via a Raspberry PI and the SANE packages.
 
-This is .Net Core 3.1 web app that uses the SANE scanimage CLI to access a scanner. I use it on a Raspberry PI, so it should work for you on any linux flavor where you can run scanimage and .Net Core. Being a web app, you can access the scanner from any device that has a browser. It should render fine on a phone.
+This is a .Net Core 3.1 web app that uses the SANE scanimage CLI to access a scanner. I use it on a Raspberry PI, so it should work for you on any linux flavor where you can run scanimage and .Net Core. Being a web app, you can access the scanner from any device that has a browser. It should render fine on a phone.
 
 Not all of the scanimage features are implemented yet.
 
