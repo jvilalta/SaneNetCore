@@ -1,0 +1,41 @@
+- name: Set up SANE on the PI
+  hosts: all
+  become: true
+  tasks:
+    - name: Install packages
+      apt:
+        pkg:
+        - sane-utils
+        - libxml2-dev
+        - libxslt-dev
+        - python-dev
+        - imagemagick
+        - python-pip
+    - name: Install pip modules
+      pip:
+        name: lxml
+    - name: Copy access file
+      copy:
+        src: ./55-libsane.rules
+        dest: /etc/udev/rules.d
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Add pi to scanner group
+      user:
+        name: pi
+        groups: scanner
+        append: yes
+    - name: update the imagemagick policy to allow it to write PDFs
+      xml:
+        path: /etc/ImageMagick-6/policy.xml
+        xpath: "/policymap/policy[@pattern='PDF']"
+        attribute: rights
+        value: 'read | write'
+    - name: Reboot to have the new rules apply
+      reboot:
+    # - name: Enable Saned
+    #   systemd:
+    #     name: saned.socket
+    #     state: stopped
+    #     enabled: no
